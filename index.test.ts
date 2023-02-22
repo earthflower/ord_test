@@ -5,8 +5,10 @@ import ecc from "@bitcoinerlab/secp256k1";
 import * as Bitcoin from "bitcoinjs-lib";
 import rng from "randombytes";
 import BIP32Factory from "bip32";
+import ECPairFactory from "ecpair";
 
 const bip32 = BIP32Factory(ecc);
+const ecp = ECPairFactory(ecc);
 
 const PROTOCOL_ID = Buffer.from("ord");
 const BODY_TAG = bitcoin.opcodes.OP_1;
@@ -16,6 +18,9 @@ const TAPROOT_WITNESS_VERSION = 0x01;
 const TAPROOT_ANNEX_PREFIX = 0x50;
 const SCHNORR_SIGNATURE_SIZE = 64;
 const LEAF_VERSION_TAPSCRIPT = 0xc0; //TAPROOT_LEAF_TAPSCRIPT
+const defaultInternalKey =
+  "50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
+const defaultVersion = 192;
 
 export interface Inscription {
   body: Buffer;
@@ -80,11 +85,16 @@ test("check controlBlock exists ", (t) => {
     output: revealScriptWithCheckSig,
   };
   bitcoin.initEccLib(ecc);
+  const redeem = {
+    output: revealScriptWithCheckSig,
+    redeemVersion: 192,
+  };
 
   //taproot_spend_info
   const { output, witness } = bitcoin.payments.p2tr({
     internalPubkey: toXOnly(internalKey.publicKey),
     scriptTree,
+    redeem,
     network: network,
   });
 
@@ -105,4 +115,5 @@ test("check controlBlock exists ", (t) => {
   const controlBlock = witness[witness.length - 1];
 
   console.log(controlBlock, witness);
+  t.true(controlBlock.length > 0);
 });
